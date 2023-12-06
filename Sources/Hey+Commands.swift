@@ -1,16 +1,5 @@
 import ArgumentParser
 
-@main
-struct Hey: ParsableCommand {
-  static var configuration = CommandConfiguration(
-    commandName: "hey",
-    abstract: "An AI-powered terminal assistant.",
-    version: "0.0.1",
-    subcommands: [Cmd.self, Script.self, Summarize.self, Verbosify.self],
-    defaultSubcommand: Cmd.self
-  )
-}
-
 struct CodeArgs: ParsableArguments {
   @Flag(name: [.long, .short], help: "Elaborate on the result and provide explicit explanation.")
   var verbose = false
@@ -22,7 +11,16 @@ struct CodeArgs: ParsableArguments {
   var prompt: [String]
 }
 
-extension Hey {
+@main
+struct Hey: ParsableCommand {
+  static var configuration = CommandConfiguration(
+    commandName: "hey",
+    abstract: "An AI-powered terminal assistant.",
+    version: "0.0.1",
+    subcommands: [Cmd.self, Script.self, Summarize.self, Verbosify.self],
+    defaultSubcommand: Cmd.self
+  )
+
   struct Cmd: ParsableCommand {
     static var configuration = CommandConfiguration(
       commandName: "cmd",
@@ -43,15 +41,15 @@ extension Hey {
       abstract: "Write ad-hoc multi-lingual scripts."
     )
 
-    @Argument(help: "The target scripting/programming language.")
-    var lang: String
+    @Option(name: [.customLong("in")], help: "The target scripting/programming language.")
+    var lang: String = "bash" // replace with hey init conf file option or with system default shell
 
     @OptionGroup var args:CodeArgs
 
     mutating func run() throws {
       let verbose = if !self.args.verbose { "non-" } else { "" }
-      print(
-        "Script[\(verbose + "verbose")]: In \(self.lang) \(args.prompt.joined(separator: " "))")
+      let context = if self.args.context.isEmpty { "empty" } else { self.args.context.joined(separator: ", ") }
+      print("Script[\(verbose + "verbose")]: In \(self.lang) with context[\(context)] \(args.prompt.joined(separator: " "))")
     }
   }
 
@@ -61,11 +59,11 @@ extension Hey {
       abstract: "Summarize and explain multi-lingual code and commands."
     )
 
-    @Argument(help: "The code/script file to explain.")
-    var file: String
+    @Argument(help: "The code/script file(s) to explain.")
+    var files: [String]
 
     func run() throws {
-      print("Summarize: \(file)")
+      print("Summarize: [\n\t\(files.joined(separator: ",\n\t"))\n]")
     }
   }
 
@@ -79,7 +77,7 @@ extension Hey {
     var file: String
 
     mutating func run() throws {
-      print("Verbosify: \(file))")
+      print("Verbosify: \(file)")
     }
   }
 }
