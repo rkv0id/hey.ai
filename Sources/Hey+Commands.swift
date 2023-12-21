@@ -11,6 +11,9 @@ struct Hey: ParsableCommand {
         defaultSubcommand: Cmd.self
     )
     
+    // Add last command that runs the code immediately (somewhat to make it possible
+    // to see the output and then run it in a piping command or something)
+    
     @Flag(name: [.long, .short], help: "Force usage of system context.")
     var system = false
     
