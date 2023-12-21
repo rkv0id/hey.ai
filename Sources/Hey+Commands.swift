@@ -7,7 +7,7 @@ struct Hey: ParsableCommand {
         commandName: "hey",
         abstract: "An AI-powered terminal assistant.",
         version: "0.0.1",
-        subcommands: [Init.self, Cmd.self, Script.self, Summarize.self, Verbosify.self],
+        subcommands: [There.self, Cmd.self, Script.self, Summarize.self, Verbosify.self],
         defaultSubcommand: Cmd.self
     )
     
@@ -35,7 +35,7 @@ struct Hey: ParsableCommand {
         mutating func run() throws {
             let verbose = args.verbose ? "" : "non-"
             let context =
-            if self.args.files.isEmpty { "empty" } else { self.args.files.joined(separator: ", ") }
+            if self.args.context.isEmpty { "empty" } else { self.args.context.joined(separator: ", ") }
             print(
                 "Script[\(verbose + "verbose")]: In \(self.lang) with context[\(context)] \(args.prompt.joined(separator: " "))"
             )
