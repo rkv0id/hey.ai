@@ -1,3 +1,4 @@
+import Foundation
 import ArgumentParser
 
 struct Init: ParsableCommand {
@@ -8,6 +9,18 @@ struct Init: ParsableCommand {
     
     mutating func run() throws {
         print("Initiating.")
+        let context = ContextCache()
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .prettyPrinted
+        do {
+            let jsonContext = try encoder.encode(context)
+            if let jsonString = String(data: jsonContext, encoding: .utf8) {
+                print(jsonString)
+            }
+        } catch {
+            print("Could not encode context into a JSON representation.")
+        }
+        
         // TODO:
         // in db: updates a flag table to mention which context has
         // been collected so that other sub-commands become aware of

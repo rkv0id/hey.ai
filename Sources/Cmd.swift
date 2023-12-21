@@ -19,7 +19,7 @@ extension Hey {
             
             let bodyString = "{\"Cmd[\(verbose + "verbose")]\": \"with prompt[\(args.prompt.joined(separator: " "))]\"}"
             let request = try HTTPClient.Request(
-                url: "https://webhook.site/672f9dd2-070c-44a2-9886-89e971f74e2e",
+                url: APIConstants.URLs.testHook,
                 method: .POST,
                 headers: HTTPHeaders([("User-Agent", "Hey CLI-Assistant")]),
                 body: HTTPClient.Body.data(bodyString.data(using: .utf8)!)
