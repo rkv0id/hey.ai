@@ -8,18 +8,13 @@ struct There: ParsableCommand {
     )
     
     mutating func run() throws {
-        print("Initiating assistant...")
-        let context = Context()
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-        let jsonContext = try encoder.encode(context)
-        if let jsonString = String(data: jsonContext, encoding: .utf8) {
-            print(jsonString)
-        }
+        print("> Initiating assistant...")
         
-        print("\nContext Reset Complete!\nAssistant online and at service.")
+        let cache = Cache()
+        let context = Context().withBinaries()
+        cache.sync(context: context)
         
-        _ = HeyDB(readOnly: false)
+        print("> Context Reset Complete!\nAssistant online and at service.")
         
         // TODO:
         // in db: updates a flag table to mention which context has
