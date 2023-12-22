@@ -23,8 +23,8 @@ struct Context : Encodable {
         
         environment = Environment(
             lang: global["LANG"] ?? Context._undefined,
-            path: (global["PATH"] ?? Context._undefined).split(separator: ":").map { String($0) },
-            pwd: Environment.getCurrentWorkingDirectory() ?? Context._undefined
+            pwd: Environment.getCurrentWorkingDirectory() ?? Context._undefined,
+            paths: (global["PATH"] ?? Context._undefined).split(separator: ":").map { String($0) }
         )
         
         user = User(
@@ -45,6 +45,24 @@ struct Context : Encodable {
             ftpProxy: global["FTP_PROXY"] ?? Context._undefined,
             httpsProxy: global["HTTPS_PROXY"] ?? Context._undefined,
             noProxy: Network.getNoProxyList(noProxyEnv: global["NO_PROXY"])
+        )
+    }
+    
+    private init(term: Term, environment: Environment, user: User, system: System, network: Network) {
+        self.term = term
+        self.environment = environment
+        self.user = user
+        self.system = system
+        self.network = network
+    }
+    
+    func withBinaries() -> Context {
+        return Context(
+            term: self.term,
+            environment: self.environment.withBinaries(),
+            user: self.user,
+            system: self.system,
+            network: self.network
         )
     }
     
@@ -72,8 +90,31 @@ struct Context : Encodable {
     
     struct Environment : Encodable {
         let lang: String
-        let path: [String]
         let pwd: String
+        let paths: [String]
+        let bins: Set<String>
+        
+        init(lang: String, pwd: String, paths: [String], withBinaries: Bool = false) {
+            self.lang = lang
+            self.pwd = pwd
+            self.paths = paths
+            self.bins = Set(
+                withBinaries
+                ? paths
+                    .compactMap { URL(string: $0) }
+                    .flatMap { Environment._findBinaries(in: $0) }
+                : []
+            )
+        }
+        
+        func withBinaries() -> Environment {
+            return Environment(
+                lang: self.lang,
+                pwd: self.pwd,
+                paths: self.paths,
+                withBinaries: true
+            )
+        }
         
         static func getCurrentWorkingDirectory() -> String? {
             let bufferSize = 1028 // a reasonable bufferSize
@@ -82,6 +123,26 @@ struct Context : Encodable {
                 return nil
             }
             return String(cString: cwd)
+        }
+        
+        private static func _findBinaries(in directory: URL) -> [String] {
+            let fileManager = FileManager.default
+            
+            if let contents = try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) {
+                return contents
+                    .filter { fileURL in
+                        var isDirectory: ObjCBool = false
+                        if fileManager.fileExists(atPath: fileURL.path(), isDirectory: &isDirectory),
+                           !isDirectory.boolValue,
+                           fileManager.isExecutableFile(atPath: fileURL.path()) {
+                            return true
+                        }
+                        return false
+                    }
+                    .map { $0.lastPathComponent }
+            } else {
+                return []
+            }
         }
     }
     
@@ -144,5 +205,4 @@ struct Context : Encodable {
             return noProxyList.split(separator: ",").map { String($0) }
         }
     }
-    
 }
