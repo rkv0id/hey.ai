@@ -1,15 +1,16 @@
 import Foundation
 
-struct Context : Encodable {
+struct Context : Codable {
+    private static let _undefined: String = "UNDEFINED"
+    private static let _cache = Cache()
+    
     let term: Term
     let environment: Environment
     let user: User
     let system: System
     let network: Network
     
-    private static let _undefined: String = "UNDEFINED"
-    
-    init() {
+    private init() {
         let global = ProcessInfo.processInfo.environment
         
         term = Term(
@@ -23,7 +24,6 @@ struct Context : Encodable {
         
         environment = Environment(
             lang: global["LANG"] ?? Context._undefined,
-            pwd: Environment.getCurrentWorkingDirectory() ?? Context._undefined,
             paths: (global["PATH"] ?? Context._undefined).split(separator: ":").map { String($0) }
         )
         
@@ -48,25 +48,17 @@ struct Context : Encodable {
         )
     }
     
-    private init(term: Term, environment: Environment, user: User, system: System, network: Network) {
-        self.term = term
-        self.environment = environment
-        self.user = user
-        self.system = system
-        self.network = network
+    static func load() -> Context {
+        if let cachedContext = _cache.read() {
+            return cachedContext
+        }
+        
+        let newContext = Context()
+        _cache.update(context: newContext)
+        return newContext
     }
     
-    func withBinaries() -> Context {
-        return Context(
-            term: self.term,
-            environment: self.environment.withBinaries(),
-            user: self.user,
-            system: self.system,
-            network: self.network
-        )
-    }
-    
-    struct Term : Encodable {
+    struct Term : Codable {
         let emulator: String
         let app: String
         let size: Size
@@ -74,7 +66,7 @@ struct Context : Encodable {
         let shell: String
         let display: String
         
-        struct Size : Encodable {
+        struct Size : Codable {
             let width: Int
             let height: Int
         }
@@ -88,77 +80,49 @@ struct Context : Encodable {
         }
     }
     
-    struct Environment : Encodable {
+    struct Environment : Codable {
         let lang: String
-        let pwd: String
         let paths: [String]
         let bins: Set<String>
         
-        init(lang: String, pwd: String, paths: [String], withBinaries: Bool = false) {
+        init(lang: String, paths: [String]) {
             self.lang = lang
-            self.pwd = pwd
             self.paths = paths
-            self.bins = Set(
-                withBinaries
-                ? paths
-                    .compactMap { URL(string: $0) }
-                    .flatMap { Environment._findBinaries(in: $0) }
-                : []
-            )
-        }
-        
-        func withBinaries() -> Environment {
-            return Environment(
-                lang: self.lang,
-                pwd: self.pwd,
-                paths: self.paths,
-                withBinaries: true
-            )
-        }
-        
-        static func getCurrentWorkingDirectory() -> String? {
-            let bufferSize = 1028 // a reasonable bufferSize
-            var buffer = [CChar](repeating: 0, count: bufferSize)
-            guard let cwd = getcwd(&buffer, bufferSize) else {
-                return nil
-            }
-            return String(cString: cwd)
+            self.bins = Set(paths
+                .compactMap { URL(string: $0) }
+                .flatMap { Environment._findBinaries(in: $0) })
         }
         
         private static func _findBinaries(in directory: URL) -> [String] {
             let fileManager = FileManager.default
-            
-            if let contents = try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) {
-                return contents
-                    .filter { fileURL in
-                        var isDirectory: ObjCBool = false
-                        if fileManager.fileExists(atPath: fileURL.path(), isDirectory: &isDirectory),
-                           !isDirectory.boolValue,
-                           fileManager.isExecutableFile(atPath: fileURL.path()) {
-                            return true
-                        }
-                        return false
+            let contents = try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+            return (contents ?? [])
+                .filter { fileURL in
+                    var isDirectory: ObjCBool = false
+                    if fileManager.fileExists(atPath: fileURL.path(), isDirectory: &isDirectory),
+                       !isDirectory.boolValue,
+                       fileManager.isExecutableFile(atPath: fileURL.path()) {
+                        return true
                     }
-                    .map { $0.lastPathComponent }
-            } else {
-                return []
-            }
+                    return false
+                }
+                .map { $0.lastPathComponent }
         }
     }
     
-    struct User : Encodable {
+    struct User : Codable {
         let name: String
         let home: String
     }
     
-    struct System : Encodable {
+    struct System : Codable {
         let os: String
         let version: String
         let hostName: String
         let arch: String
         let cpu: CPU
         
-        struct CPU : Encodable {
+        struct CPU : Codable {
             let name: String
             let physical: Int
             let logical: Int
@@ -192,7 +156,7 @@ struct Context : Encodable {
         }
     }
     
-    struct Network : Encodable {
+    struct Network : Codable {
         let httpProxy: String
         let ftpProxy: String
         let httpsProxy: String

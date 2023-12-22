@@ -7,7 +7,7 @@ struct Hey: ParsableCommand {
         commandName: "hey",
         abstract: "An AI-powered terminal assistant.",
         version: "0.0.1",
-        subcommands: [There.self, Cmd.self, Script.self, Summarize.self, Verbosify.self],
+        subcommands: [Cmd.self, Script.self, Summarize.self, Verbosify.self],
         defaultSubcommand: Cmd.self
     )
     
