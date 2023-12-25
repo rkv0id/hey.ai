@@ -1,5 +1,4 @@
 import ArgumentParser
-import AsyncHTTPClient
 
 @main
 struct Hey: ParsableCommand {
@@ -7,7 +6,7 @@ struct Hey: ParsableCommand {
         commandName: "hey",
         abstract: "An AI-powered terminal assistant.",
         version: "0.0.1",
-        subcommands: [Cmd.self, Script.self, Summarize.self, Verbosify.self],
+        subcommands: [Cmd.self, Script.self, Summarize.self, Verbosify.self, Context.self],
         defaultSubcommand: Cmd.self
     )
     
@@ -20,17 +19,12 @@ struct Hey: ParsableCommand {
         @Option(name: [.customLong("in")], help: "The target scripting/programming language.")
         var lang: String = "bash"  // replace with hey init conf file option or with system default shell
         
-        @Option(name: [.long, .short], help: "Helper files to prompt as context for the assistant.")
-        var context: [String] = []
-        
         @Argument(help: "The input prompt (request) for the acting agent.")
         var prompt: [String]
         
         mutating func run() throws {
-            let context =
-            if self.context.isEmpty { "empty" } else { self.context.joined(separator: ", ") }
             print(
-                "Script: In \(self.lang) with context[\(context)] \(prompt.joined(separator: " "))"
+                "Script: In \(self.lang) \(prompt.joined(separator: " "))"
             )
         }
     }
@@ -42,10 +36,11 @@ struct Hey: ParsableCommand {
         )
         
         @Argument(help: "The code/script file(s) to explain.")
-        var files: [String]
+        // TODO: can support folders
+        var file: [String]
         
         func run() throws {
-            print("Summarize: [\n\t\(files.joined(separator: ",\n\t"))\n]")
+            print("Summarize: [\n\t\(file.joined(separator: ",\n\t"))\n]")
         }
     }
     

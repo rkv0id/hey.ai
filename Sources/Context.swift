@@ -1,169 +1,40 @@
-import Foundation
+import ArgumentParser
 
-struct Context: Codable {
-    private static let _undefined: String = "UNDEFINED"
-    private static let _cache = Cache()
+struct Context: ParsableCommand {
+    static var configuration = CommandConfiguration(
+        commandName: "context",
+        abstract: "Manage contexts for hey sessions.",
+        subcommands: [Files.self]
+    )
     
-    private let term: Term
-    private let environment: Environment
-    private let user: User
-    private let system: System
-    private let network: Network
-    
-    private init() {
-        let global = ProcessInfo.processInfo.environment
-        
-        term = Term(
-            emulator: global["TERM"] ?? Context._undefined,
-            app: global["TERM_PROGRAM"] ?? Context._undefined,
-            size: Term.getTerminalSize(),
-            encoding: global["LC_CTYPE"] ?? Context._undefined,
-            shell: global["SHELL"] ?? Context._undefined,
-            display: global["DISPLAY"] ?? Context._undefined
+    struct Files: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            commandName: "files",
+            abstract: "Manage files for set context."
         )
         
-        environment = Environment(
-            lang: global["LANG"] ?? Context._undefined,
-            paths: (global["PATH"] ?? Context._undefined)
-                .split(separator: ":")
-                .map { String($0) }
-        )
+        @Flag(name: [.long, .short], help: "Delete files for the list of provided ids from set context.")
+        var delete = false
         
-        user = User(
-            name: ProcessInfo.processInfo.userName,
-            home: global["HOME"] ?? Context._undefined
-        )
+        @Argument(help: "The list of files to load or ids of files to [--delete] from set context.")
+        var files: [String] = []
         
-        system = System(
-            os: "macOS",
-            version: ProcessInfo.processInfo.operatingSystemVersionString,
-            hostName: Host.current().name ?? Context._undefined,
-            arch: System.getSystemArchitecture(),
-            cpu: System.getCPUInfo()
-        )
-        
-        network = Network(
-            httpProxy: global["http_proxy"] ?? Context._undefined,
-            ftpProxy: global["FTP_PROXY"] ?? Context._undefined,
-            httpsProxy: global["HTTPS_PROXY"] ?? Context._undefined,
-            noProxy: Network.getNoProxyList(noProxyEnv: global["NO_PROXY"])
-        )
-    }
-    
-    static func load() -> Context {
-        if let cachedContext = _cache.read() {
-            return cachedContext
-        }
-        
-        let newContext = Context()
-        _cache.update(context: newContext)
-        return newContext
-    }
-    
-    private struct Term: Codable {
-        let emulator: String
-        let app: String
-        let size: Size
-        let encoding: String
-        let shell: String
-        let display: String
-        
-        struct Size: Codable {
-            let width: Int
-            let height: Int
-        }
-        
-        static func getTerminalSize() -> Size {
-            var w = winsize()
-            guard ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == 0 else {
-                return Term.Size(width: 0, height: 0)
-            }
-            return Size(width: Int(w.ws_col), height: Int(w.ws_row))
-        }
-    }
-    
-    private struct Environment: Codable {
-        let lang: String
-        let paths: [String]
-        let bins: Set<String>
-        
-        init(lang: String, paths: [String]) {
-            self.lang = lang
-            self.paths = paths
-            self.bins = Set(
-                paths
-                    .compactMap { URL(string: $0) }
-                    .flatMap { Environment._findBinaries(in: $0) })
-        }
-        
-        private static func _findBinaries(in directory: URL) -> [String] {
-            let fileManager = FileManager.default
-            let contents = try? fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: nil)
-            return (contents ?? [])
-                .filter { fileURL in
-                    var isDirectory: ObjCBool = false
-                    return fileManager.fileExists(atPath: fileURL.path(), isDirectory: &isDirectory)
-                    && !isDirectory.boolValue
-                    && fileManager.isExecutableFile(atPath: fileURL.path())
+        mutating func run() throws {
+            if files.isEmpty {
+                // TODO: List
+                print("Listing")
+            } else {
+                let openAI = ChatGPT()
+                if delete {
+                    // TODO: Delete
+                    print("Deleting")
+                } else {
+                    print("Uploading")
+                    // TODO: Filter out files already linked
+                    files.forEach { openAI.uploadFile(path: $0) }
+                    // TODO: Link File in DB and to online assistant
                 }
-                .map { $0.lastPathComponent }
-        }
-    }
-    
-    private struct User: Codable {
-        let name: String
-        let home: String
-    }
-    
-    private struct System: Codable {
-        let os: String
-        let version: String
-        let hostName: String
-        let arch: String
-        let cpu: CPU
-        
-        struct CPU: Codable {
-            let name: String
-            let physical: Int
-            let logical: Int
-        }
-        
-        static func getCPUInfo() -> CPU {
-            var size = 64
-            var name = [CChar](repeating: 0, count: size)
-            sysctlbyname("machdep.cpu.brand_string", &name, &size, nil, 0)
-            
-            var cores: Int = 0
-            size = MemoryLayout<Int>.size
-            sysctlbyname("hw.physicalcpu", &cores, &size, nil, 0)
-            
-            var threads: Int = 0
-            size = MemoryLayout<Int>.size
-            sysctlbyname("hw.logicalcpu", &threads, &size, nil, 0)
-            
-            return CPU(name: String(cString: name), physical: cores, logical: threads)
-        }
-        
-        static func getSystemArchitecture() -> String {
-            var unameInfo = utsname()
-            uname(&unameInfo)
-            
-            return withUnsafePointer(to: &unameInfo.machine) {
-                $0.withMemoryRebound(to: Int8.self, capacity: 1) { String(cString: $0) }
             }
-        }
-    }
-    
-    private struct Network: Codable {
-        let httpProxy: String
-        let ftpProxy: String
-        let httpsProxy: String
-        let noProxy: [String]
-        
-        static func getNoProxyList(noProxyEnv: String?) -> [String] {
-            return (noProxyEnv ?? "").split(separator: ",").map { String($0) }
         }
     }
 }
