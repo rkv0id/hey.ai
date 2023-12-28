@@ -10,6 +10,8 @@ struct Context: ParsableCommand {
     func run() throws {
         // TODO: list all contexts
         print("listing contexts...")
+        let env = Environment.load()
+        print(env)
     }
     
     struct New: ParsableCommand {

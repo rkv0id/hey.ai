@@ -17,7 +17,7 @@ struct Environment: Codable {
             emulator: global["TERM"] ?? Environment._undefined,
             app: global["TERM_PROGRAM"] ?? Environment._undefined,
             size: Term.getTerminalSize(),
-            colored: Bool(global["CLICOLOR"] ?? "false")!,
+            colored: (global["CLICOLOR"] ?? Environment._undefined).lowercased() == "yes",
             colors: global["LSCOLORS"] ?? Environment._undefined,
             encoding: global["LC_CTYPE"] ?? Environment._undefined,
             shell: global["SHELL"] ?? Environment._undefined,
