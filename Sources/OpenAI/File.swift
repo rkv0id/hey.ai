@@ -66,8 +66,9 @@ struct File : Codable {
             
             self.id = fileId
             self.url = fileURL
-            self.name = path
+            self.name = fileURL.lastPathComponent
             self.mimeType = fileMimeType
+            
             guard File._cache.add(file: self) else {
                 throw FileError.cashSyncFailed("File uploaded but cache sync failed!")
             }
