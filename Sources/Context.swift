@@ -4,12 +4,40 @@ struct Context: ParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "context",
         abstract: "Manage contexts for hey sessions.",
-        subcommands: [Files.self]
+        subcommands: [Describe.self, Files.self]
     )
     
     func run() throws {
         // TODO: list all contexts
-        print("listing contexts")
+        print("listing contexts...")
+    }
+    
+    struct New: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            commandName: "new",
+            abstract: "Create and activate a new context."
+        )
+        
+        @Option(name: .long, help: "Custom description for the new context.")
+        var describe = ""
+        
+        func run() throws {
+            print("Creating a new context [description: \(describe)]...")
+        }
+    }
+    
+    struct Describe: ParsableCommand {
+        static var configuration = CommandConfiguration(
+            commandName: "describe",
+            abstract: "Assign a description to set context."
+        )
+        
+        @Argument(help: "The description to assign to the active context for a better explainability.")
+        var description: String
+        
+        func run() throws {
+            print("Setting this \(description)...")
+        }
     }
     
     struct Files: ParsableCommand {
@@ -36,17 +64,6 @@ struct Context: ParsableCommand {
             } else {
                 openAI.listFiles().forEach { print("\($0.url.absoluteString) --> \($0)") }
             }
-        }
-    }
-    
-    struct List: ParsableCommand {
-        static var configuration = CommandConfiguration(
-            commandName: "list",
-            abstract: "List all available contexts."
-        )
-        
-        func run() throws {
-            // TODO: list all contexts
         }
     }
 }

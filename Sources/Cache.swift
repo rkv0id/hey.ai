@@ -2,6 +2,7 @@ import Foundation
 
 struct Cache {
     static let shared = Cache()
+    
     private static let _appConfDir = URL(fileURLWithPath: ProcessInfo.processInfo.environment["HOME"] ?? "/tmp").appending(path: ".hey")
     private static let _envFile = _appConfDir.appending(path: "env.json")
     private static let _filesFile = _appConfDir.appending(path: "files.json")
