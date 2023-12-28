@@ -2,7 +2,7 @@ import Foundation
 
 struct Environment: Codable {
     private static let _undefined: String = "UNDEFINED"
-    private static let _cache = Cache()
+    private static let _cache = Cache.shared
     
     private let term: Term
     private let executables: Executables
@@ -53,12 +53,12 @@ struct Environment: Codable {
     }
     
     static func load() -> Environment {
-        if let cachedEnv = _cache.read() {
+        if let cachedEnv = _cache.readEnv() {
             return cachedEnv
         }
         
         let newEnv = Environment()
-        _cache.update(environment: newEnv)
+        _ = _cache.update(environment: newEnv)
         return newEnv
     }
     

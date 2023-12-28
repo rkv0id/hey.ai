@@ -13,10 +13,10 @@ struct Hey: ParsableCommand {
     struct Script: ParsableCommand {
         static var configuration = CommandConfiguration(
             commandName: "script",
-            abstract: "Write ad-hoc multi-lingual scripts."
+            abstract: "Write ad-hoc scripts."
         )
         
-        @Option(name: [.customLong("in")], help: "The target scripting/programming language.")
+        @Option(name: .customLong("in"), help: "The target scripting/programming language.")
         var lang: String = "bash"  // replace with hey init conf file option or with system default shell
         
         @Argument(help: "The input prompt (request) for the acting agent.")
@@ -53,7 +53,7 @@ struct Hey: ParsableCommand {
         @Argument(help: "The code/script file to augment.")
         var file: String
         
-        @Flag(name: [.long, .short], help: "Run the verbose code generated instead of printing it.")
+        @Flag(name: .shortAndLong, help: "Run the verbose code generated instead of printing it.")
         var eval = false
         
         mutating func run() throws {
